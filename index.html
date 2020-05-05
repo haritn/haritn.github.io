@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Partner Build</title>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" href="style.css"/>
+  <script
+  src="https://code.jquery.com/jquery-3.5.0.min.js"
+  integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
+  crossorigin="anonymous"></script>
+  </head>
+	<body>
+		<img class="preload" src="img/cards.png"/>
+		<div id="card-table">
+ 			# of Players:<input id="players" size="1" value="5"/>
+			<button id="deal">DEAL</button>
+		</div>
+    <div id="msg-box">Select Number of players and hit "Deal" button.
+    </div>
+      		<!-- load this at the bottom so the #card-table element exists -->
+		<script src="cards.js"></script>
+		<script src="script.js"></script>
+	</body>
+</html>
