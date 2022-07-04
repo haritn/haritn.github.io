@@ -1,0 +1,202 @@
+﻿
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+  </head>
+
+  <body>
+    <h1>
+      Nerdle Solver!
+    </h1>
+    <p id="instructions">
+      Go enter this two equations <b>0+12/3=4</b> and <b>9*8-7=65</b> on Nerdle.<br />
+      Enter the results from Nerdle below by adjusting the colors<br />
+      (b-black, p-purple, g-green).
+    </p>
+    <form>
+      <pre id='input'>
+<input type="text" id="line1" size="24" value="0b +b 1b 2p /g 3g =g 4p"/>
+<input type="text" id="line2" size="24" value="9p *b 8b -b 7b =p 6b 5p"/>
+<input type="button" value="Solve" onclick="solve()"/>
+</pre>
+    </form>
+    <pre id="output" style="background-color:LightGreen;">
+</pre>
+    <hr />
+
+
+    <script type="text/javascript">//<![CDATA[
+
+boxes = []; //represents each of eight boxes
+purples = []; //letters not in positions
+counter = 0; //count how many iterations.
+
+const regexEqualFollowedByNumOnly = /=\d+$/;
+const regexLeadingZero = /0\d+/;
+const regexConsicutiveSigns = /[\+\-*\/][\+\-*\/]/;
+const regexAnyOperator=/[+-\/\*]/;
+function findSolution() {
+
+  var problemSpace = 1;
+  boxes.forEach(box => problemSpace *= box.length());
+  //console.log(boxes);
+  console.log("START ------", problemSpace);
+  if (problemSpace > 1000000) {
+    println("Error:Problem space too large. Please follow the instructions properly");
+    throw Error("Problem space too large. Please follow the instructions properly")
+  }
+  //console.log(boxes);
+
+  lazyProduct(boxes, function(b0, b1, b2, b3, b4, b5, b6, b7) {
+    // Your function is yielded unique combinations of values from the arrays
+    var equation = b0 + b1 + b2 + b3 + b4 + b5 + b6 + b7;
+    /* console.log("Equation:", equation); */
+    evaluate(equation);
+    counter++;
+    if (counter > 1000000) { //extra check. Exit if endless loop.
+      println("Error:Too many iterations. Please follow the instructions properly");
+      throw Error("Too many iterations. Please follow the instructions properly")
+    }
+  });
+  console.log("Possibilies computed:", counter);
+  console.log("END...");
+}
+
+function evaluate(str) {
+  //@TODO : evaluate total problem bspace (multiply possibilities from each box)
+  splt = str.split('=');
+  if (splt.length != 2) return false; //must have = sign
+  eqn = splt[0];
+  result = splt[1];
+  //no leading zero or leading sign for result
+  if (result.length > 1 && (result[0] === '0' || result[0] === '+' || result[0] === '-')) return false;
+  //reject all leading zeros
+  if (str.match(regexLeadingZero)) return false;
+  //reject consicutive signs.
+  if (str.match(regexConsicutiveSigns)) return false;
+  //return if operator is in result.
+  if (result.match(regexAnyOperator)) return false;
+  //@TODO - make sure all the purple letters are in string
+  for (var i = purples.length; i--;){
+  	if(str.indexOf(purples[i]) < 0) return;
+  } 
+
+  try {
+    if (eval(eqn) === eval(result)) {
+      console.log("SOLUTION:", str, eval(eqn), eval(result));
+      println("SOLUTION:" + str);
+      return true;
+    }
+  } catch (error) {
+    return false;
+  }
+}
+
+//this goes through all the permutation and combinations
+function lazyProduct(sets, f, context) {
+  if (!context) context = this;
+  var p = [],
+    max = sets.length - 1,
+    lens = [];
+  for (var i = sets.length; i--;) lens[i] = sets[i].length();
+
+  function dive(d) {
+    var a = sets[d],
+      len = lens[d];
+    if (d == max)
+      for (var i = 0; i < len; ++i) p[d] = a.possibilities[i], f.apply(context, p);
+    else
+      for (var i = 0; i < len; ++i) p[d] = a.possibilities[i], dive(d + 1);
+    p.pop();
+  }
+  dive(0);
+}
+
+
+function println(txt) {
+  document.getElementById("output").innerHTML += txt + '\n';
+}
+
+function enterResults(str) {
+  entries = str.split(' ');
+
+  entries.forEach(function(entry, index) {
+    var letter = entry[0];
+    var color = entry[1];
+    switch (color) {
+      case 'b': //black - not in solution. Take it out from all.
+        if (purples.indexOf(letter) < 0) { //remove from all if it isn't already marked as purple
+          boxes.forEach(box => box.remove(letter));
+        } else { //remove only from current position
+          boxes[index].remove(letter);
+        }
+        break;
+      case 'p': //purple - wrong place - remove from current location
+        boxes[index].remove(letter);
+        purples.push(letter); //add to the global list of purples.
+        break;
+      case 'g': //green - this is the only solution for this box.
+        boxes[index].solve(letter);
+        break;
+      default:
+        console.error("This is f-ed up");
+        println("INPUT ERROR: please provide the input properly as per example.")
+    }
+
+  })
+}
+
+//simple structure to represent the each box
+function Box(pos) {
+  this.position = pos;
+  this.possibilities = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', '*', '/', '='];
+}
+
+Box.prototype.remove = function(letters) {
+  for (i = 0; i < letters.length; i++) {
+    index = this.possibilities.indexOf(letters[i]);
+    if (index > -1) {
+      this.possibilities.splice(index, 1); // 2nd parameter means remove one item only
+    }
+  }
+}
+
+Box.prototype.length = function() {
+  return this.possibilities.length;
+}
+
+Box.prototype.solve = function(letter) {
+  this.possibilities = new Array(letter);
+}
+
+function initialize() {
+  //fill out all possible values for each box.
+  for (var i = 0; i < 8; i++) {
+    boxes[i] = new Box(i);
+  }
+  //remove  '+', '-', '*', '/', '=' from first and last position
+  boxes[0].remove(['+', '-', '*', '/', '=']); // these can't be at the begining
+  boxes[7].remove(['+', '-', '*', '/', '=']); // or end
+  boxes[1].remove(['=']); // = sign can't be in first 4 boxes.
+  boxes[2].remove(['=']);
+  boxes[3].remove(['=']);
+}
+
+function solve() {
+  line1 = document.getElementById("line1").value;
+  line2 = document.getElementById("line2").value;
+  println(line1);
+  println(line2);
+  enterResults(line1);
+  enterResults(line2);
+  //console.log("Boxes:", boxes)
+  findSolution();
+}
+
+
+initialize();
+
+  //]]></script>
+</body>
+</html>
